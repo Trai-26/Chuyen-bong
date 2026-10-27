@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chuyền Bóng – Nhạc Dừng, Ai Trả Bài? | Trò Chơi Lớp Học</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
+</head>
+<body>
+
+  <!-- Canvas pháo giấy confetti ăn mừng -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ================= HEADER TRANG WEB ================= -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <span class="brand-icon">⚽</span>
+      <div>
+        <h1 class="brand-title">CHUYỀN BÓNG – AI TRẢ BÀI?</h1>
+        <p class="brand-subtitle">Trò chơi gọi học sinh trả bài sinh động, vui nhộn & công bằng</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="btn-open-called-modal" title="Xem danh sách những học sinh đã trả bài trong vòng này">
+        <span>📋</span> Đã gọi vòng này (<strong id="header-called-badge">0</strong>)
+      </button>
+      <button class="btn btn-secondary" id="btn-open-student-modal">
+        <span>👥</span> Danh sách học sinh
+      </button>
+      <button class="btn btn-secondary" id="btn-open-settings-modal">
+        <span>🎵</span> Chọn nhạc & Cài đặt
+      </button>
+      <button class="btn btn-purple" id="btn-fullscreen">
+        <span>📺</span> Toàn màn hình máy chiếu
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= THANH THÔNG TIN VÒNG CHƠI ================= -->
+  <div class="info-bar">
+    <div class="stat-chip">
+      <span>👨‍🎓 Sĩ số lớp:</span>
+      <strong id="stat-total-students">0</strong> học sinh
+    </div>
+    <div class="stat-chip active">
+      <span>⏳ Chưa gọi lượt này:</span>
+      <strong id="stat-uncalled-students">0</strong> em
+    </div>
+    <div class="stat-chip clickable-chip" id="chip-called-students" title="Bấm để xem danh sách chi tiết các em đã gọi ở vòng này">
+      <span>✅ Đã gọi lượt này:</span>
+      <strong id="stat-called-students">0</strong> em
+      <span class="chip-action-hint">Xem danh sách 👁️</span>
+    </div>
+    <button class="btn btn-secondary btn-icon" id="btn-reset-round" title="Làm mới lại vòng chơi (tất cả học sinh đều sẵn sàng)">
+      <span>🔄</span> Làm mới vòng chơi
+    </button>
+  </div>
+
+  <!-- ================= KHU VỰC SÂN CHƠI CHÍNH ================= -->
+  <main class="main-content">
+    <div class="playfield-container" id="playfield-container">
+      
+      <!-- Họa tiết sân bóng cỏ hoạt hình -->
+      <div class="field-center-circle"></div>
+      <div class="field-center-decor">🏫 SÂN TRƯỜNG VUI VẺ ⚽</div>
+
+      <!-- Sân khấu chứa các nhân vật học sinh -->
+      <div class="students-stage" id="students-stage"></div>
+
+      <!-- Quả bóng hoạt hình di chuyển -->
+      <div class="game-ball" id="game-ball" style="display: none;">
+        <div class="ball-glow-trail"></div>
+        <div class="ball-inner">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="48" fill="#ffffff" stroke="#1e293b" stroke-width="4"/>
+            <!-- Các mảng ngũ giác bóng đá kinh điển -->
+            <polygon points="50,22 62,31 57,46 43,46 38,31" fill="#1e293b"/>
+            <polygon points="20,44 32,46 34,60 23,67 14,56" fill="#1e293b"/>
+            <polygon points="80,44 86,56 77,67 66,60 68,46" fill="#1e293b"/>
+            <polygon points="35,80 43,68 57,68 65,80 50,89" fill="#1e293b"/>
+            <!-- Đường chỉ bóng -->
+            <line x1="50" y1="22" x2="50" y2="4" stroke="#1e293b" stroke-width="3"/>
+            <line x1="62" y1="31" x2="78" y2="28" stroke="#1e293b" stroke-width="3"/>
+            <line x1="57" y1="46" x2="66" y2="60" stroke="#1e293b" stroke-width="3"/>
+            <line x1="43" y1="46" x2="34" y2="60" stroke="#1e293b" stroke-width="3"/>
+            <line x1="38" y1="31" x2="22" y2="28" stroke="#1e293b" stroke-width="3"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ball-shadow" id="ball-shadow" style="display: none;"></div>
+
+      <!-- Khung hướng dẫn nếu chưa có học sinh -->
+      <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-state-icon">📋</div>
+        <h3>Chưa có học sinh nào trên sân!</h3>
+        <p>Vui lòng bấm vào nút <strong>"Danh sách học sinh"</strong> phía trên để nhập tên các em hoặc bấm nút bên dưới để nạp danh sách mẫu nhanh.</p>
+        <button class="btn btn-primary" id="btn-load-sample-students">
+          <span>✨</span> Nạp danh sách học sinh mẫu
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ================= BẢNG ĐIỀU KHIỂN ================= -->
+    <div class="controls-card">
+      <div class="primary-controls">
+        <button class="btn btn-success btn-xl" id="btn-start-game">
+          <span>▶️</span> BẮT ĐẦU CHUYỀN BÓNG
+        </button>
+        <button class="btn btn-danger btn-xl btn-pulse" id="btn-stop-game" style="display: none;">
+          <span>🛑</span> DỪNG NHẠC VÀ CHỌN
+        </button>
+        <button class="btn btn-primary btn-lg" id="btn-next-turn">
+          <span>⏭️</span> Gọi lượt tiếp theo
+        </button>
+        <button class="btn btn-warning" id="btn-undo-pick" title="Hủy lượt chọn vừa rồi nếu giáo viên phát hiện lỗi">
+          <span>↩️</span> Chọn lại / Hoàn tác
+        </button>
+      </div>
+
+      <div class="secondary-controls">
+        <div class="control-group">
+          <label for="select-game-mode">Chế độ gọi:</label>
+          <select id="select-game-mode" class="control-select">
+            <option value="no_repeat">🎯 Không trùng (Mỗi em 1 lần/vòng)</option>
+            <option value="random">🎲 Ngẫu nhiên hoàn toàn</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="select-stop-mode">Cách dừng:</label>
+          <select id="select-stop-mode" class="control-select">
+            <option value="manual">🖐️ Giáo viên bấm dừng</option>
+            <option value="auto_10">⏱️ Tự dừng sau 10 giây</option>
+            <option value="auto_15">⏱️ Tự dừng sau 15 giây</option>
+            <option value="auto_20">⏱️ Tự dừng sau 20 giây</option>
+            <option value="auto_30">⏱️ Tự dừng sau 30 giây</option>
+          </select>
+        </div>
+
+        <div class="control-group volume-slider-wrapper">
+          <span>🔊</span>
+          <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="0.8" title="Âm lượng">
+        </div>
+
+        <button class="btn btn-secondary btn-icon" id="btn-toggle-pass-sfx" title="Bật/Tắt tiếng chuyền bóng để không bị lẫn vào tiếng nhạc">
+          <span id="pass-sfx-icon">🔊</span> <span id="pass-sfx-text">Tiếng bóng: BẬT</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= MODAL KẾT QUẢ VINH DANH ================= -->
+  <div class="modal-overlay" id="winner-modal">
+    <div class="modal-card winner-card">
+      <div class="modal-body">
+        <div class="winner-banner">🎉 BÓNG ĐÃ DỪNG! 🎉</div>
+        <div class="winner-subtitle">AI SẼ TRẢ BÀI HÔM NAY?</div>
+
+        <div class="winner-avatar-container" id="winner-avatar">
+          <!-- Avatar SVG sẽ được hiển thị tại đây -->
+        </div>
+
+        <div class="winner-name-display" id="winner-name">Nguyễn Văn An</div>
+
+        <div class="winner-stats">
+          <div>Đã trả bài: <strong id="winner-call-count">1</strong> lần</div>
+          <div>•</div>
+          <div>Còn lại trong vòng: <strong id="winner-uncalled-count">11</strong> bạn</div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
+          <button class="btn btn-success btn-lg" id="btn-winner-next">
+            <span>🚀</span> Đã trả lời xong! Gọi bạn tiếp
+          </button>
+          <button class="btn btn-secondary" id="btn-winner-open-called">
+            <span>📋</span> Danh sách đã gọi
+          </button>
+          <button class="btn btn-secondary" id="btn-winner-close">
+            <span>👁️</span> Xem sân chơi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL QUẢN LÝ DANH SÁCH HỌC SINH ================= -->
+  <div class="modal-overlay" id="student-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>👥</span> Quản lý danh sách học sinh
+        </div>
+        <button class="modal-close-btn" id="btn-close-student-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tabs điều hướng -->
+        <div class="tabs-nav">
+          <button class="tab-btn active" data-tab="list">📋 Danh sách lớp</button>
+          <button class="tab-btn" data-tab="single">➕ Thêm một em</button>
+          <button class="tab-btn" data-tab="bulk">📝 Nhập hàng loạt (Dán nhiều tên)</button>
+        </div>
+
+        <!-- Tab 1: Danh sách học sinh hiện có -->
+        <div class="tab-content" id="tab-content-list">
+          <div class="student-list-table" id="student-list-rows">
+            <!-- Render danh sách động -->
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-icon" id="btn-export-csv">
+              <span>📥</span> Xuất tệp CSV
+            </button>
+            <label class="btn btn-secondary btn-icon" style="cursor: pointer;">
+              <span>📤</span> Nhập từ CSV/TXT
+              <input type="file" id="input-import-csv" accept=".csv, .txt" style="display: none;">
+            </label>
+            <button class="btn btn-danger btn-icon" id="btn-clear-all-students" style="margin-left: auto;">
+              <span>🗑️</span> Xóa toàn bộ
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 2: Thêm từng học sinh -->
+        <div class="tab-content" id="tab-content-single" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="input-single-name">Họ và tên học sinh:</label>
+            <input type="text" id="input-single-name" class="form-input" placeholder="Ví dụ: Nguyễn Văn An" autocomplete="off">
+          </div>
+          <button class="btn btn-primary" id="btn-add-single-student">
+            <span>➕</span> Thêm vào danh sách
+          </button>
+        </div>
+
+        <!-- Tab 3: Dán hàng loạt -->
+        <div class="tab-content" id="tab-content-bulk" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="textarea-bulk-names">Dán danh sách học sinh (mỗi dòng một tên):</label>
+            <textarea id="textarea-bulk-names" class="form-textarea" rows="7" placeholder="Nguyễn Văn An&#10;Trần Thị Bình&#10;Lê Minh Cường&#10;Phạm Thu Hà..."></textarea>
+            <small style="color: #64748b; display: block; margin-top: 4px;">* Hỗ trợ dán trực tiếp từ danh sách Excel hoặc Word. Hệ thống tự động bỏ dòng trống và số thứ tự ở đầu dòng.</small>
+          </div>
+          <button class="btn btn-primary" id="btn-add-bulk-students">
+            <span>📥</span> Thêm tất cả vào lớp
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('student-modal').classList.remove('active')">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CÀI ĐẶT ÂM NHẠC & TRÒ CHƠI ================= -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🎵</span> Chọn nhạc trò chơi & Cài đặt
+        </div>
+        <button class="modal-close-btn" id="btn-close-settings-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="select-music-preset">Nhạc nền cài sẵn (Tổng hợp Web Audio không lo bản quyền):</label>
+          <select id="select-music-preset" class="form-select control-select" style="width: 100%;">
+            <option value="upbeat">🎶 Vui nhộn lớp học (Tiết tấu nhanh, vui vẻ)</option>
+            <option value="suspense">🥁 Hồi hộp thót tim (Nhịp tim kịch tính)</option>
+            <option value="chiptune">🎮 Hoạt hình Chiptune 8-bit (Vui tươi game)</option>
+            <option value="gentle">🌿 Không lời nhẹ nhàng (Thư giãn)</option>
+            <option value="none">🔇 Không sử dụng nhạc (Chỉ dùng hiệu ứng SFX)</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 14px; padding: 12px 14px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <label for="check-enable-pass-sfx" style="font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: block;">
+              ⚽ Âm thanh khi bóng chuyền (Boing / Bụp)
+            </label>
+            <small style="color: #64748b;">Tắt mục này nếu bạn chỉ muốn nghe riêng nhạc nền mà không bị lẫn tiếng bóng</small>
+          </div>
+          <input type="checkbox" id="check-enable-pass-sfx" checked style="width: 22px; height: 22px; cursor: pointer;">
+        </div>
+
+        <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; padding: 16px; border-radius: var(--radius-md); margin-top: 16px;">
+          <label class="form-label">Tải tệp âm thanh từ máy tính của bạn:</label>
+          <input type="file" id="custom-audio-input" accept="audio/mp3, audio/wav, audio/ogg" class="form-input" style="background: #fff;">
+          <div id="custom-audio-name" style="font-size: 13px; font-weight: 600; color: #2563eb; margin: 8px 0 10px;">Chưa chọn tệp âm thanh riêng</div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-icon" id="btn-play-preview">▶️ Nghe thử</button>
+            <button class="btn btn-secondary btn-icon" id="btn-pause-preview">⏸️ Tạm dừng</button>
+          </div>
+          <small style="color: #64748b; display: block; margin-top: 6px;">* Hỗ trợ định dạng MP3, WAV, OGG. Tệp nhạc chạy trực tiếp trên máy của bạn, không cần mạng internet.</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="document.getElementById('settings-modal').classList.remove('active')">
+          Lưu & Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL DANH SÁCH ĐÃ GỌI Ở VÒNG NÀY ================= -->
+  <div class="modal-overlay" id="called-modal">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📋</span> Danh sách học sinh đã gọi ở vòng này
+        </div>
+        <button class="modal-close-btn" id="btn-close-called-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <span style="font-size: 13px; font-weight: 700; color: #475569;">
+            Tổng cộng: <strong id="called-modal-count" style="color: #16a34a;">0</strong> học sinh
+          </span>
+          <span style="font-size: 12px; color: #64748b;">(Sắp xếp theo thứ tự vừa được gọi)</span>
+        </div>
+
+        <div class="called-list-container" id="called-list-container">
+          <!-- Render danh sách động học sinh đã gọi -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button class="btn btn-secondary btn-icon" id="btn-called-reset-round" title="Cho tất cả các em tham gia lại từ đầu vòng">
+          <span>🔄</span> Làm mới vòng chơi
+        </button>
+        <button class="btn btn-primary" onclick="document.getElementById('called-modal').classList.remove('active')">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nạp các module JavaScript -->
+  <script src="js/avatars.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
+
