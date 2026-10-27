@@ -102,4 +102,5 @@ d:\Dự án trò chơi\App trò chơi gọi trả bài\
 - **Tối ưu máy chiếu lớp học**: Chế độ Fullscreen tỷ lệ 16:9, độ tương phản cao, phông chữ lớn dễ đọc từ cuối lớp học.
 
 #   C h u y e n - b o n g  
+ #   C h u y e n - b o n g  
  
